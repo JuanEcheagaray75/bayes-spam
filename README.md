@@ -24,4 +24,14 @@ Running our script with the previous command would use the default values we hav
 
 You can also run `python3 bayes.py --help` to see all the available options.
 
-We have begun the implementation of different modes for our script, but as of now the only available option is `demo`. In later versions of our program, we will implement modes for training and predicting which can then be used in production environments. As of now you are free to test our program with different alpha parameters and stopwords. You can replace the given dataset in the data folder, but make sure to select the adequate language.
+
+
+If you'd like to use the model for predicting a specific message, you can run the following command:
+
+```bash
+python3 bayes.py --predict "Your message here"
+```
+
+It would produce an output similar to this:
+
+![Usage Example](img/usage-example.png)
