@@ -24,8 +24,6 @@ Running our script with the previous command would use the default values we hav
 
 You can also run `python3 bayes.py --help` to see all the available options.
 
-
-
 If you'd like to use the model for predicting a specific message, you can run the following command:
 
 ```bash
