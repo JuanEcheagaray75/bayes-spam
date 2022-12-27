@@ -3,20 +3,26 @@ import pickle
 from sklearn.feature_extraction.text import CountVectorizer
 
 
-class naive_bayes_spam():
+class NaiveBayesSpam():
 
-    def __init__(self, data, alpha=1, language='english'):
+    def __init__(
+        self,
+        data: pd.DataFrame,
+        alpha: float = 1,
+        language: str = 'english'
+    ):
+
         self.alpha = alpha
         self.language = language
         self.data = data
 
+    def __clean(self):
 
-    def clean(self):
         self.data['MESSAGE'] = self.data['MESSAGE'].str.lower()
         self.data['MESSAGE'] = self.data['MESSAGE'].str.replace('[^a-z ]', '')
 
+    def __set_vocabulary(self):
 
-    def set_vocabulary(self):
         count_vector = CountVectorizer(stop_words=self.language)
         freq_table = count_vector.fit_transform(self.data['MESSAGE']).toarray()
         self.vocabulary = count_vector.get_feature_names_out()
@@ -24,8 +30,8 @@ class naive_bayes_spam():
 
         self.data = pd.concat([self.data, self.freq_table], axis=1)
 
+    def __set_prior(self):
 
-    def set_prior(self):
         self.spam = self.data[self.data['TYPE'] == 1]
         self.ham = self.data[self.data['TYPE'] == 0]
 
@@ -44,36 +50,39 @@ class naive_bayes_spam():
         self.spam_params = {unique_word: 0 for unique_word in self.vocabulary}
         self.ham_params = {unique_word: 0 for unique_word in self.vocabulary}
 
-
     def fit(self):
-        self.clean()
-        self.set_vocabulary()
-        self.set_prior()
+
+        self.__clean()
+        self.__set_vocabulary()
+        self.__set_prior()
 
         for word in self.vocabulary:
             self.n_word_given_spam = self.spam[word].sum()
             self.p_word_given_spam = (
-                self.n_word_given_spam + self.alpha) / (self.n_spam + self.alpha * self.n_vocabulary)
+                (self.n_word_given_spam + self.alpha)
+                / (self.n_spam + self.alpha * self.n_vocabulary)
+                )
             self.spam_params[word] = self.p_word_given_spam
 
             self.n_word_given_ham = self.ham[word].sum()
             self.p_word_given_ham = (
-                self.n_word_given_ham + self.alpha) / (self.n_ham + self.alpha * self.n_vocabulary)
+                (self.n_word_given_ham + self.alpha)
+                / (self.n_ham + self.alpha * self.n_vocabulary)
+                )
             self.ham_params[word] = self.p_word_given_ham
 
+    def predict(self, messages: pd.Series) -> pd.Series:
 
-    def predict(self, messages):
+        def classify(message: str) -> bool:
 
-        y_pred = []
-        for message in messages:
             message = message.lower()
             message = message.replace('[^a-z ]', '')
-            message = message.split(' ')
+            message_list = message.split(' ')
 
             p_spam_given_message = self.p_spam
             p_ham_given_message = self.p_ham
 
-            for word in message:
+            for word in message_list:
                 if word in self.spam_params:
                     p_spam_given_message *= self.spam_params[word]
 
@@ -81,14 +90,24 @@ class naive_bayes_spam():
                     p_ham_given_message *= self.ham_params[word]
 
             if p_ham_given_message > p_spam_given_message:
-                y_pred.append(0)
+                return False
+
             elif p_ham_given_message < p_spam_given_message:
-                y_pred.append(1)
+                return True
+
             else:
-                y_pred.append(0)
+                return False
+
+        # Apply classify function along the messages Series
+        y_pred = messages.apply(classify)
 
         return y_pred
 
-    def save_model(self, path):
+    def save_model(self, path: str) -> None:
+        """Save the model in a pickle file.
+
+        Args:
+            path (str): Path (including name) to which the model will be saved.
+        """
         with open(path, 'wb') as file:
             pickle.dump(self, file)
